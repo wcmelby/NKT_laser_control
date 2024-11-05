@@ -1,9 +1,10 @@
 from NKTP_DLL import *
 
-COMport = 'COM3'
-COMPACT_devID = 1
-SELECT_devID = 16
+COMport = 'COM3' # depends on the port the device is connected to
+COMPACT_devID = 1 # fixed for the SuperK COMPACT
+SELECT_devID = 16 # fixed for the SuperK SELECT
 
+# Scan all ports and print out the devices connected to each port
 def scan_ports():
     openPorts(getAllPorts(), 1, 1)
     print('Following ports has modules:', getOpenPorts())
@@ -103,17 +104,6 @@ def overall_power(power=None):
         result = registerWriteReadU8(COMport, COMPACT_devID, 0x3E, power, -1)
         current_power = result[1]
         print(f'Setting overall power level to {current_power}%.')
-
-# def get_overall_power():
-#     result = registerReadU8(COMport, COMPACT_devID, 0x3E, 0)
-#     power = result[1]
-#     print(f'Overall power level: {power}%')
-
-
-# # Set the current overall power for the laser emission as a percent
-# def set_overall_power(power):
-#     result = registerWriteU8(COMport, COMPACT_devID, 0x3E, power, -1)
-#     print(f'Setting overall power level to {power}%: {RegisterResultTypes(result)}')
 
 
 # Get the internal pulse frequency limit in Hz

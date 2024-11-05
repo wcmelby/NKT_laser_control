@@ -1,1 +1,1 @@
-This repository contains Python functions to use NTK Photonics devices, including SuperK COMPACT laser and SuperK SELECT tunable filter. 
+This repository contains tools to use NTK Photonics devices, including SuperK COMPACT laser and SuperK SELECT tunable filter. Python functions for easy use are found in [controls.py](controls.py). Example usage is shown in [Laser_Demo.ipynb](Laser_Demo.ipynb). 
