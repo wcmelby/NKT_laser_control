@@ -1,0 +1,1 @@
+This repository contains Python functions to use NTK Photonics devices, including SuperK COMPACT laser and SuperK SELECT tunable filter. 
