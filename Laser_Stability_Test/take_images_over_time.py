@@ -5,6 +5,7 @@ import time
 import copy
 import os
 
+# Script to take images over time with CRED2 camera
 # This file also adds comments to the fits file header
 # This file will attempt to reduce the image as well
 
@@ -130,72 +131,84 @@ if not res:
     print('error setting gain mode')
 sdk.Update(context)
 
-val = input("Take how many images?")
+val = input("Take how many images per fits cube?") # a .fits cube has multiple images that will be taken back to back, then the median of them will be used 
 val=int(val)
 #if not val.isnumeric():
 #    val = 10
 
+time_interval = input('Wait how many seconds between cubes?')
+time_interval = int(time_interval)
+
 print("Taking Images...")
 
-sdk.EnableGrabN(context, val+1)
-sdk.Update(context)
 
-sdk.Start(context)
-time.sleep(val*tint/1000)
-counter = 0
-max_iter = 10
-while sdk.IsGrabNFinished(context) is False:
-    if counter >= max_iter:
-        break
-    time.sleep(1)
-    counter += 1
+for j in range(4):
+    sdk.EnableGrabN(context, val+1)
+    sdk.Update(context)
 
-print("Is grab finished? " + str(sdk.IsGrabNFinished(context)))
+    sdk.Start(context)
+    time.sleep(val*tint/1000)
+    counter = 0
+    max_iter = 10
+    while sdk.IsGrabNFinished(context) is False:
+        if counter >= max_iter:
+            break
+        time.sleep(1)
+        counter += 1
 
-frame_list = []
-# Choose file-saving directory
-foldername = r"Z:\\Lab_Data\\Mueller_Matrix_Polarimeter\\L_Plate_Characterization\\Transmission\\Raw_Plate_Transmission\\"
-for i in range(val+1):
-    image16b = copy.deepcopy(sdk.GetRawImageAsNumpyArray(context, i))
+    print("Is grab finished? " + str(sdk.IsGrabNFinished(context)))
 
-#     Only saves second frame onward. First image is a throwaway
-    if i > 0:
-        frame_list.append(image16b)
+    frame_list = []
+    # Choose file-saving directory
+    #foldername = r"Z:\\Lab_Data\\Mueller_Matrix_Polarimeter\\L_Plate_Characterization\\Transmission\\Raw_Plate_Transmission\\"
+    foldername = r"C:\\Users\\EPL User\\Desktop\\data11_8_24\\raw\\"
+    for i in range(val+1):
+        image16b = copy.deepcopy(sdk.GetRawImageAsNumpyArray(context, i))
 
-frame_list = np.array(frame_list)
+    #     Only saves second frame onward. First image is a throwaway
+        if i > 0:
+            frame_list.append(image16b)
 
-# Save and name the files 
-hdu_new = fits.PrimaryHDU(frame_list)
-filename = "L_Plate_Transmission_2000nm_"+str(val_fps)+"_"+str(set_tint)
-hdu_new.writeto(foldername+filename+".fits", overwrite = True)
+    frame_list = np.array(frame_list)
 
-hdu = fits.open(foldername+filename+'.fits', mode='update')
-header = hdu[0].header
-header['COMMENT1'] = "Raw image taken using CRED2 ER camera of the L band waveplate."
-header['COMMENT2'] = "Camera temperature: "+str(set_temp)+"C. Framerate: "+str(val_fps)+"fps. Exposure time: "+str(set_tint)+"ms."
-hdu.flush()
-hdu.close()
+    # Save and name the files 
+    hdu_new = fits.PrimaryHDU(frame_list)
+    filename = "L_Plate_Transmission_2000nm_"+str(val_fps)+"_"+str(set_tint)
+    hdu_new.writeto(foldername+filename+".fits", overwrite = True)
 
-print("Files saved to " + str(foldername))       
-print("Is grab finished? " + str(sdk.IsGrabNFinished(context)))
+    hdu = fits.open(foldername+filename+'.fits', mode='update')
+    header = hdu[0].header
+    header['COMMENT1'] = "Raw image taken using CRED2 ER camera."
+    header['COMMENT2'] = "Camera temperature: "+str(set_temp)+"C. Framerate: "+str(val_fps)+"fps. Exposure time: "+str(set_tint)+"ms."
+    header['COMMENT3'] = "Time since start: " + str(j*time_interval) + " seconds."
+    hdu.flush()
+    hdu.close()
+
+    print("Files saved to " + str(foldername))       
+    print("Is grab finished? " + str(sdk.IsGrabNFinished(context)))
+
+    time.sleep(time_interval)
 
 sdk.Stop(context)
 
 
 
 # try to subtract dark frame
-reduce = input("Subtract dark frame from images? (1 for yes, 0 for no)")
-reduce = float(reduce)
+# reduce = input("Subtract dark frame from images? (1 for yes, 0 for no)")
+# reduce = float(reduce)
+reduce = 1
 if reduce == 1:
     print("Subtracting dark frames...")
 else:
     quit()
 
 # UPDATE THESE PARTS FOR EACH WAVELENGTH
-dark_file = 'Z:\\Lab_Data\\Mueller_Matrix_Polarimeter\\L_Plate_Characterization\\Darks\\Dark_600_0.1.fits'
-image_file = 'L_Plate_'
-new_directory = r"Z:\\Lab_Data\\Mueller_Matrix_Polarimeter\\L_Plate_Characterization\\Transmission\\Reduced_Plate_Transmission\\"
+#dark_file = 'Z:\\Lab_Data\\Mueller_Matrix_Polarimeter\\L_Plate_Characterization\\Darks\\Dark_600_0.1.fits'
+dark_file = r"C:\\Users\\EPL User\\Desktop\\darks\\Dark_490_2.fits"
+#image_file = 'L_Plate_'
+#new_directory = r"Z:\\Lab_Data\\Mueller_Matrix_Polarimeter\\L_Plate_Characterization\\Transmission\\Reduced_Plate_Transmission\\"
 #new_directory = r"Z:\\Lab_Data\\Mueller_Matrix_Polarimeter\\L_Plate_Characterization\\Reduced_Data\\Reduced_L_1400"
+new_directory = r"C:\\Users\\EPL User\\Desktop\\data11_8_24\\reduced\\"
 
 # Open the dark image and extract pixel values
 fits.open(dark_file)
@@ -203,16 +216,28 @@ dark = fits.getdata(dark_file)
 dark_median = np.median(dark, axis=0)
 
 # Search through the desired raw data folder
-for file in os.listdir(foldername):
-    if file.startswith(image_file):                                # Call specific files starting with the desired name
-        with fits.open(os.path.join(foldername, file)) as hdul:
-            img_data = hdul[0].data
-            img_median = np.median(img_data, axis=0)
-            reduced_data = img_median - dark_median
+# for file in os.listdir(foldername):
+#     if file.startswith(image_file):                                # Call specific files starting with the desired name
+#         with fits.open(os.path.join(foldername, file)) as hdul:
+#             img_data = hdul[0].data
+#             img_median = np.median(img_data, axis=0)
+#             reduced_data = img_median - dark_median
 
-        # Save the newly reduced image to a reduced data folder
-        new_filename = f"Reduced_{file}"
-        new_filepath = os.path.join(new_directory, new_filename)
-        fits.writeto(new_filepath, reduced_data, overwrite=True)
+#         # Save the newly reduced image to a reduced data folder
+#         new_filename = f"Reduced_{file}"
+#         new_filepath = os.path.join(new_directory, new_filename)
+#         fits.writeto(new_filepath, reduced_data, overwrite=True)
+
+# Reduce all images in the folder
+for file in os.listdir(foldername):
+    with fits.open(os.path.join(foldername, file)) as hdul:
+        img_data = hdul[0].data
+        img_median = np.median(img_data, axis=0)
+        reduced_data = img_median - dark_median
+
+    # Save the newly reduced image to a reduced data folder
+    new_filename = f"Reduced_{file}"
+    new_filepath = os.path.join(new_directory, new_filename)
+    fits.writeto(new_filepath, reduced_data, overwrite=True)
         
 print("Process complete.")
