@@ -142,7 +142,7 @@ time_interval = int(time_interval)
 print("Taking Images...")
 
 
-for j in range(4):
+for j in range(60):
     sdk.EnableGrabN(context, val+1)
     sdk.Update(context)
 
@@ -156,7 +156,7 @@ for j in range(4):
         time.sleep(1)
         counter += 1
 
-    print("Is grab finished? " + str(sdk.IsGrabNFinished(context)))
+    # print("Is grab finished? " + str(sdk.IsGrabNFinished(context)))
 
     frame_list = []
     # Choose file-saving directory
@@ -173,7 +173,7 @@ for j in range(4):
 
     # Save and name the files 
     hdu_new = fits.PrimaryHDU(frame_list)
-    filename = "L_Plate_Transmission_2000nm_"+str(val_fps)+"_"+str(set_tint)
+    filename = "SuperK_1600nm_"+str(val_fps)+"_"+str(set_tint)+"_"+str(j)
     hdu_new.writeto(foldername+filename+".fits", overwrite = True)
 
     hdu = fits.open(foldername+filename+'.fits', mode='update')
@@ -184,8 +184,9 @@ for j in range(4):
     hdu.flush()
     hdu.close()
 
-    print("Files saved to " + str(foldername))       
+    # print("Files saved to " + str(foldername))       
     print("Is grab finished? " + str(sdk.IsGrabNFinished(context)))
+    print("Iteration: " + str(j))
 
     time.sleep(time_interval)
 
