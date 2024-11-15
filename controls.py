@@ -1,8 +1,11 @@
 from NKTP_DLL import *
 
-COMport = 'COM3' # depends on the port the device is connected to
+COMport = 'COM3' # depends on the port the device is connected to. COM3 for Rayleigh desktop
 COMPACT_devID = 1 # fixed for the SuperK COMPACT
 SELECT_devID = 16 # fixed for the SuperK SELECT
+
+# TODO: make classes for the COMPACT and SELECT devices
+# TODO: don't print regresult status each time
 
 # Scan all ports and print out the devices connected to each port
 def scan_ports():
@@ -22,8 +25,8 @@ def scan_ports():
 
 # Functions for the SuperK COMPACT
 
-# Get the interlock status
 def get_interlock():
+    """Get the interlock status"""
     result = registerReadU32(COMport, COMPACT_devID, 0x32, -1)
     LSB = result[1]
 
@@ -35,8 +38,8 @@ def get_interlock():
         print('Interlock off (interlock circuit open).')
 
 
-# Disable interlock
 def disable_interlock():
+    """Disable the interlock"""
     result = registerWriteReadU32(COMport, COMPACT_devID, 0x32, 0, -1)
     LSB = result[1]
 
@@ -48,8 +51,8 @@ def disable_interlock():
         print('Interlock off (interlock circuit open).')
 
 
-# Reset interlock (make sure the physical key is turned On)
 def reset_interlock():
+    """Reset the interlock. Make sure the physical key is switched ON before calling this function."""
     result = registerWriteReadU32(COMport, COMPACT_devID, 0x32, 1, -1)
     LSB = result[1]
 
@@ -70,8 +73,8 @@ mode_mapping = {
     5: 'External gate off',
 }
 
-# Get or set the SuperK COMPACT operating mode (pulse trigger source)
 def trig_mode(mode=None):
+    """Get the current operating mode (pulse trigger source). Optional input to set the trigger mode (see mapping above)."""
     if mode is None:
         result = registerReadU32(COMport, COMPACT_devID, 0x31, -1)
         status = mode_mapping[result[1]]
@@ -82,20 +85,20 @@ def trig_mode(mode=None):
         print('Laser mode:', status)
 
 
-# Turn on the laser emission
 def emission_on():
+    """Turn on the laser emission."""
     result = registerWriteU8(COMport, COMPACT_devID, 0x30, 1, -1) # devID=1 for Compact
     print('Setting emission ON.', RegisterResultTypes(result))
 
 
-# Turn off laser emission
 def emission_off():
+    """Turn off the laser emission."""
     result = registerWriteU8(COMport, COMPACT_devID, 0x30, 0, -1)
     print('Setting emission OFF.', RegisterResultTypes(result))
 
 
-# Get or set the current overall power for laser emission as a percent
 def overall_power(power=None):
+    """Get the current overall power for laser emission as a percent. Optional input to set the power level."""
     if power is None:
         result = registerReadU8(COMport, COMPACT_devID, 0x3E, -1)
         current_power = result[1]
@@ -106,53 +109,62 @@ def overall_power(power=None):
         print(f'Setting overall power level to {current_power}%.')
 
 
-# Get the internal pulse frequency limit in Hz
 def get_max_pulse():
+    """Get the maximum possible internal pulse frequency in Hz."""
     result = registerReadU32(COMport, COMPACT_devID, 0x36, -1)
     max_frequency = result[1]
     print(f'Maximum possible internal frequency: {max_frequency} Hz.')
 
 
-# Get the current internal pulse frequency in Hz
-def get_pulse_frequency():
-    result = registerReadU32(COMport, COMPACT_devID, 0x33, -1)
-    frequency = result[1]
-    print(f'Current internal pulse frequency: {frequency} Hz.')
+def pulse_frequency(frequency=None):
+    """Get the current internal pulse frequency in Hz. Optional input to set the pulse frequency."""
+    if frequency is None:
+        result = registerReadU32(COMport, COMPACT_devID, 0x33, -1)
+        current_frequency = result[1]
+        print(f'Current internal pulse frequency: {current_frequency} Hz.')
+    else:
+        result = registerWriteReadU32(COMport, COMPACT_devID, 0x33, frequency, -1)
+        current_frequency = result[1]
+        print(f'Current internal pulse frequency: {current_frequency} Hz.')
 
 
-# Set the current internal pulse frequency in Hz, then readout the current value
-def set_pulse_frequency(target_frequency):
-    result = registerWriteReadU32(COMport, COMPACT_devID, 0x33, target_frequency, -1)
-    frequency = result[1]
-    print(f'Current internal pulse frequency: {frequency} Hz.')
+def display_backlight(brightness=None):
+    """Get the current display backlight level as a percent. Optional input to set the brightness level."""
+    if brightness is None:
+        result = registerReadU32(COMport, COMPACT_devID, 0x26, -1)
+        backlight_level = result[1]
+        print('Display backlight level: ', backlight_level, '%')
+    else:
+        result = registerWriteReadU32(COMport, COMPACT_devID, 0x26, brightness, -1)
+        backlight_level = result[1]
+        print(f'Display backlight level set to {backlight_level}%.')       
 
 
 # Now functions for the SuperK SELECT
 
-# Crystal 1 (VIS/NIR) minimum wavelength in nm
 def lambda_min1():
+    """Crystal 1 (VIS/NIR) minimum wavelength in nm."""
     result = registerReadU32(COMport, SELECT_devID, 0x90, -1)
     wavelength = result[1]/1000
     print(f'Minimum wavelength for crystal 1: {int(wavelength)} nm.')
 
 
-# Crystal 1 (VIS/NIR) maximum wavelength in nm
 def lambda_max1():
+    """Crystal 1 (VIS/NIR) maximum wavelength in nm."""
     result = registerReadU32(COMport, SELECT_devID, 0x91, -1)
     wavelength = result[1]/1000
     print(f'Minimum wavelength for crystal 1: {int(wavelength)} nm.')
 
 
-# Crystal 2 (NIR/IR) minimum wavelength in nm
 def lambda_min2():
+    """Crystal 2 (NIR/IR) minimum wavelength in nm."""
     result = registerReadU32(COMport, SELECT_devID, 0xA0, -1)
     wavelength = result[1]/1000
     print(f'Minimum wavelength for crystal 1: {int(wavelength)} nm.')
 
 
-# Crystal 2 (NIR/IR) maximum wavelength in nm
 def lambda_max2():
+    """Crystal 2 (NIR/IR) maximum wavelength in nm."""
     result = registerReadU32(COMport, SELECT_devID, 0xA1, -1)
     wavelength = result[1]/1000
     print(f'Minimum wavelength for crystal 1: {int(wavelength)} nm.')
-
